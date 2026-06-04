@@ -1,0 +1,52 @@
+name: iac-security-scan
+
+# Static security scanning of Terraform on every push/PR. No cloud access needed
+# (read-only analysis), so this runs without any AWS credentials.
+on:
+  push:
+    branches: [main]
+    paths: ["infra/**"]
+  pull_request:
+    paths: ["infra/**"]
+
+permissions:
+  contents: read
+  security-events: write # upload SARIF to the Security tab
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Terraform fmt check
+        uses: hashicorp/setup-terraform@v3
+      - run: terraform fmt -check -recursive infra/
+
+      # Checkov — policy-as-code misconfiguration scanner.
+      - name: Checkov
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: infra/
+          framework: terraform
+          output_format: cli,sarif
+          output_file_path: console,checkov.sarif
+          soft_fail: false # fail the build on a HIGH/CRITICAL finding
+
+      # Trivy config scan (this is the maintained successor to tfsec).
+      - name: Trivy IaC scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: config
+          scan-ref: infra/
+          exit-code: "1"
+          severity: HIGH,CRITICAL
+          format: sarif
+          output: trivy.sarif
+
+      - name: Upload Checkov SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: checkov.sarif
+          category: checkov

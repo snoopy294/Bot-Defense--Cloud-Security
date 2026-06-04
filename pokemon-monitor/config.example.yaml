@@ -1,0 +1,140 @@
+# Pokemon stock-notification monitor — example config.
+# Copy this file to `config.yaml` and fill in your values.
+#
+# This tool ONLY checks availability and alerts you (push/Discord/email). It
+# never adds to cart, never checks out, and makes no attempt to evade bot
+# protection. You buy the item yourself, as a normal customer.
+
+# How often to poll, in seconds. Be polite — short intervals get you rate-limited
+# or IP-banned and that's on you. 60s+ is reasonable for a hobby monitor.
+poll_interval_seconds: 90
+# Random extra delay (0..jitter_seconds) added to each cycle so requests aren't
+# perfectly periodic. Keep this on.
+jitter_seconds: 30
+
+# Reliability / 24-7 settings.
+state_file: "monitor_state.json"   # remembers what's already in stock across restarts
+log_file: "monitor.log"            # rotating log (~2MB x 3) for 24/7 running
+heartbeat_minutes: 360             # send a quiet "still alive" ntfy ping this often (0 = off)
+
+# Which availability types to alert on (preorder / pickup / online). Preorder and
+# in-store pickup are the lanes a normal buyer can actually win, and they come
+# through louder (ntfy "max" priority + distinct emoji/color). Leave commented to
+# alert on all types; uncomment to focus only on the winnable lanes:
+# alert_types: ["preorder", "pickup"]
+
+# Re-notify reminders. While a preorder/pickup item stays available, re-alert
+# every `interval_minutes` so a missed first ping doesn't cost you the drop.
+# Online is intentionally excluded (a long-lived online listing would spam you).
+# The first alert still fires on the out -> available transition; this only adds
+# follow-up pings while the item is still up. Disabled by default.
+# renotify:
+#   enabled: true
+#   interval_minutes: 10
+#   types: ["preorder", "pickup"]
+
+# Price-gouging filter — only alert when the price is close to MSRP, so scalper
+# listings priced far above retail don't ping you. Disabled by default. Keyed by
+# the SAME id/URL you list under each retailer below.
+#   - max_over_msrp: 1.25 means "alert only if price <= MSRP * 1.25" (25% over).
+#   - Items with NO msrp entry ALWAYS alert (fail open). If a price can't be
+#     read, it also alerts — a real restock is never silently dropped.
+# price_filter:
+#   enabled: true
+#   max_over_msrp: 1.25
+#   msrp:
+#     "1011206804": 49.99   # e.g. an Elite Trainer Box (TCIN -> MSRP)
+#     "93954446": 26.99     # e.g. a Booster Bundle
+
+# User-Agent sent with every request. Identify yourself honestly. Do not
+# impersonate a browser to defeat detection.
+user_agent: "pokemon-stock-monitor/1.0 (personal use; contact: you@example.com)"
+
+# Optional real-browser transport (Playwright/Chromium). Off by default. When
+# enabled, retailer checks run through a persistent Chromium with Chrome's real
+# TLS fingerprint and JS execution, which gets past Cloudflare/Akamai bot checks
+# that 403 a plain HTTP client. Notifications always stay on plain HTTP.
+# Requires:  pip install playwright   &&   playwright install chromium
+browser:
+  enabled: false
+  headless: true
+  user_data_dir: "browser_data"
+
+notifications:
+  # ntfy = free phone push, alerts in seconds. Install the ntfy app, subscribe to
+  # your topic. NOTE: public ntfy.sh topics are world-readable — use a long random
+  # topic name (or self-host ntfy and set `server`).
+  ntfy:
+    enabled: true
+    server: "https://ntfy.sh"
+    topic: "pkmn-stock-CHANGE-ME-to-something-random-9f3a1c"
+    priority: "urgent"   # urgent/max overrides phone silent mode; tapping opens the buy link
+
+  discord:
+    enabled: true
+    webhook_url: "https://discord.com/api/webhooks/XXXXXXXX/XXXXXXXXXXXX"
+
+  email:
+    enabled: true
+    smtp_host: "smtp.gmail.com"
+    smtp_port: 587
+    use_tls: true
+    username: "you@gmail.com"
+    # For Gmail, generate an App Password (not your normal password):
+    # https://myaccount.google.com/apppasswords
+    password: "your-app-password"
+    from_addr: "you@gmail.com"
+    to_addrs:
+      - "you@gmail.com"
+
+retailers:
+  # Best Buy uses its official, free developer API. Get a key at:
+  # https://developer.bestbuy.com/  (it's free; respect the rate limits)
+  bestbuy:
+    enabled: true
+    api_key: "YOUR_BESTBUY_API_KEY"
+    # SKU numbers to watch. Preorder status is detected automatically.
+    skus:
+      - 6418599   # example SKU — replace with the cards/ETBs you want
+    # Optional in-store pickup check near you (bots are weak here):
+    check_stores: true
+    zip: "90210"   # ALWAYS quote ZIPs — an unquoted leading zero (07030) is read as octal
+    radius: 25   # miles
+
+  # Target reads its public product API. You need the product's TCIN
+  # (shown in the product URL, e.g. /p/-/A-89542109 -> tcin 89542109).
+  # Reports ship-to-me, nearby-store pickup, and preorder.
+  target:
+    enabled: true
+    store_id: "1357"   # OPTIONAL: a Target store id (find via store locator). Omit to
+                       # skip in-store pickup checks (online/preorder still run).
+    zip: "90210"       # ALWAYS quote ZIPs (see note above)
+    radius: 25
+    tcins:
+      - "89542109"  # example TCIN — replace
+
+  # Walmart availability is read from the public product page (most fragile).
+  walmart:
+    enabled: true
+    item_ids:
+      - "12345678"  # example item id from /ip/.../12345678 — replace
+
+  # Pokémon Center — best-effort; watch official product page URLs.
+  # May be blocked by bot protection (we log + skip, never evade).
+  pokemoncenter:
+    enabled: true
+    urls:
+      - "https://www.pokemoncenter.com/product/REPLACE-ME"
+
+  # Costco online — best-effort; Akamai may block (we log + skip).
+  costco:
+    enabled: false
+    urls:
+      - "https://www.costco.com/REPLACE-ME.product.100XXXXXX.html"
+
+  # GameStop — best-effort; great for catching MSRP PREORDERS. Cloudflare may
+  # block (we log + skip).
+  gamestop:
+    enabled: false
+    urls:
+      - "https://www.gamestop.com/products/REPLACE-ME"

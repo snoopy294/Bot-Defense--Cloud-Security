@@ -1,0 +1,46 @@
+name: deploy-dev
+
+# Keyless deploy: GitHub Actions assumes an AWS IAM role via OIDC — no access
+# keys are ever stored as secrets. AWS_ROLE_ARN is a (non-secret) repo variable
+# set from the `github_actions_role_arn` Terraform output.
+on:
+  workflow_dispatch: # manual trigger while the lab is in active development
+  push:
+    branches: [main]
+    paths: ["infra/**", "app/**"]
+
+permissions:
+  id-token: write # REQUIRED to mint the OIDC token
+  contents: read
+
+concurrency:
+  group: deploy-dev
+  cancel-in-progress: false # never run two applies against the same state at once
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: infra/envs/dev
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform init
+        run: terraform init -backend-config=backend.hcl
+
+      - name: Terraform plan
+        run: terraform plan -input=false -out=tfplan
+
+      # Apply only on pushes to main, never on manual dry-runs of a PR branch.
+      - name: Terraform apply
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: terraform apply -input=false -auto-approve tfplan

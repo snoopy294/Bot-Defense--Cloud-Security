@@ -1,0 +1,4 @@
+# Copy to terraform.tfvars and fill in. (terraform.tfvars is gitignored.)
+region             = "us-east-1"
+github_repo        = "OWNER/bot-defense-lab" # e.g. "liude/bot-defense-lab"
+budget_alert_email = "liuderek078@gmail.com"

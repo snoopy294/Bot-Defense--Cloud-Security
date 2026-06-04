@@ -1,0 +1,6 @@
+requests>=2.31
+PyYAML>=6.0
+
+# Optional: only needed if you enable the real-browser transport
+# (browser.enabled in config). After installing, run: playwright install chromium
+# playwright>=1.44
