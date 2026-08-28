@@ -40,3 +40,29 @@ def test_admin_reset_reseeds_products_and_clears_reservations_orders(tables, adm
 
     assert "Item" not in tables.Table("Reservations").get_item(Key={"reservation_id": "res-old"})
     assert "Item" not in tables.Table("Orders").get_item(Key={"order_id": "order-old"})
+
+
+def test_admin_reset_clears_multiple_items_across_pages(tables, admin_secret):
+    # Seed multiple reservations and orders to test pagination logic
+    for i in range(5):
+        tables.Table("Reservations").put_item(Item={
+            "reservation_id": f"res-{i}", "product_id": f"prod-{i}",
+            "session_id": f"sess-{i}", "ttl": 0, "status": "active",
+        })
+        tables.Table("Orders").put_item(Item={
+            "order_id": f"order-{i}", "reservation_id": f"res-{i}",
+            "product_id": f"prod-{i}", "session_id": f"sess-{i}", "created_at": 0,
+        })
+
+    drop_at = int(time.time()) + 3600
+    result = handler(_event(admin_secret, [
+        {"product_id": "prod-new", "title": "New Product", "price": 29.99, "stock": 10, "drop_at": drop_at},
+    ]), None)
+
+    assert result["statusCode"] == 200
+    assert json.loads(result["body"]) == {"reset": 1}
+
+    # Verify all old reservations are cleared
+    for i in range(5):
+        assert "Item" not in tables.Table("Reservations").get_item(Key={"reservation_id": f"res-{i}"})
+        assert "Item" not in tables.Table("Orders").get_item(Key={"order_id": f"order-{i}"})

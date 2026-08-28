@@ -26,10 +26,15 @@ def _table(env_key: str):
 
 def _clear_table(table) -> None:
     key_name = table.key_schema[0]["AttributeName"]
-    items = table.scan(ProjectionExpression=key_name).get("Items", [])
     with table.batch_writer() as batch:
-        for item in items:
-            batch.delete_item(Key={key_name: item[key_name]})
+        scan_kwargs = {"ProjectionExpression": key_name}
+        while True:
+            resp = table.scan(**scan_kwargs)
+            for item in resp.get("Items", []):
+                batch.delete_item(Key={key_name: item[key_name]})
+            if "LastEvaluatedKey" not in resp:
+                break
+            scan_kwargs["ExclusiveStartKey"] = resp["LastEvaluatedKey"]
 
 
 def handler(event: dict, context) -> dict:
