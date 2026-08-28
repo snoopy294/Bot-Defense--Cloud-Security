@@ -47,6 +47,15 @@ def test_list_after_drop_shows_live_stock(tables):
     assert body[0]["stock"] == 3
 
 
+def test_list_at_drop_exact_boundary_shows_live(tables):
+    _seed(tables, drop_at=int(time.time()), stock=2)
+    result = handler(_event("GET /products"), None)
+    import json
+    body = json.loads(result["body"])
+    assert body[0]["status"] == "live"
+    assert body[0]["stock"] == 2
+
+
 def test_detail_not_found_returns_404(tables):
     result = handler(_event("GET /products/{id}", path_id="missing"), None)
     assert result["statusCode"] == 404
