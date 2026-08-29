@@ -24,8 +24,7 @@ def _table(env_key: str):
     return boto3.resource("dynamodb").Table(os.environ[env_key])
 
 
-def _clear_table(table) -> None:
-    key_name = table.key_schema[0]["AttributeName"]
+def _clear_table(table, key_name: str) -> None:
     with table.batch_writer() as batch:
         scan_kwargs = {"ProjectionExpression": key_name}
         while True:
@@ -50,8 +49,8 @@ def handler(event: dict, context) -> dict:
 
     products = json.loads(event.get("body") or "{}").get("products", [])
 
-    _clear_table(_table("RESERVATIONS_TABLE"))
-    _clear_table(_table("ORDERS_TABLE"))
+    _clear_table(_table("RESERVATIONS_TABLE"), "reservation_id")
+    _clear_table(_table("ORDERS_TABLE"), "order_id")
 
     products_table = _table("PRODUCTS_TABLE")
     for product in products:
