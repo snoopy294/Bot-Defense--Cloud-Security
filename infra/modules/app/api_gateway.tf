@@ -11,6 +11,7 @@ resource "aws_apigatewayv2_authorizer" "session" {
   authorizer_payload_format_version = "2.0"
   enable_simple_responses           = true
   identity_sources                  = ["$request.header.Cookie"]
+  authorizer_result_ttl_in_seconds  = 0
 }
 
 resource "aws_lambda_permission" "authorizer_invoke" {
