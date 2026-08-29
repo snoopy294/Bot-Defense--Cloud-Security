@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 from authorizer.handler import handler
 
 
@@ -33,3 +35,21 @@ def test_reuses_valid_existing_session_and_increments_request_count(tables):
 def test_rejects_malformed_session_cookie(tables):
     result = handler(_event("session_id=not-a-uuid"), None)
     assert result == {"isAuthorized": False}
+
+
+def test_emits_structured_log_line_on_authorization(tables, capsys):
+    handler(_event(None), None)
+    line = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
+    assert set(line.keys()) == {
+        "ts", "session_id", "route", "method", "status",
+        "latency_ms", "product_id", "outcome",
+    }
+    assert line["status"] == 200
+    assert line["outcome"] == "new_session"
+
+
+def test_emits_structured_log_line_on_rejection(tables, capsys):
+    handler(_event("session_id=not-a-uuid"), None)
+    line = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
+    assert line["status"] == 401
+    assert line["outcome"] == "invalid_session"

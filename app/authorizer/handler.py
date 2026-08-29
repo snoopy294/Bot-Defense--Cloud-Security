@@ -7,6 +7,8 @@ import uuid
 
 import boto3
 
+from common.logging import log_request
+
 SESSION_ID_RE = re.compile(
     r"^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
 )
@@ -26,9 +28,12 @@ def _extract_session_id(event: dict) -> str | None:
 
 
 def handler(event: dict, context) -> dict:
+    start = time.time()
     session_id = _extract_session_id(event)
 
     if session_id is not None and not SESSION_ID_RE.match(session_id):
+        log_request(route="authorizer", method="AUTH", status=401, start_time=start,
+                    session_id=session_id, product_id=None, outcome="invalid_session")
         return {"isAuthorized": False}
 
     table = _table()
@@ -42,6 +47,8 @@ def handler(event: dict, context) -> dict:
                 UpdateExpression="SET request_count = request_count + :one",
                 ExpressionAttributeValues={":one": 1},
             )
+            log_request(route="authorizer", method="AUTH", status=200, start_time=start,
+                        session_id=session_id, product_id=None, outcome="existing_session")
             return {
                 "isAuthorized": True,
                 "context": {"session_id": session_id, "is_new_session": "false"},
@@ -54,6 +61,8 @@ def handler(event: dict, context) -> dict:
         "ttl": now + SESSION_TTL_SECONDS,
         "request_count": 1,
     })
+    log_request(route="authorizer", method="AUTH", status=200, start_time=start,
+                session_id=session_id, product_id=None, outcome="new_session")
     return {
         "isAuthorized": True,
         "context": {"session_id": session_id, "is_new_session": "true"},
