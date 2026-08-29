@@ -84,3 +84,11 @@ resource "aws_budgets_budget" "zero_spend" {
     subscriber_email_addresses = [var.budget_alert_email]
   }
 }
+
+# ---------------------------------------------------------------------------
+# Phase 1: the "drop" target app that later phases attack, log, and defend.
+# ---------------------------------------------------------------------------
+module "app" {
+  source      = "../../modules/app"
+  environment = "dev"
+}
