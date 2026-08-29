@@ -1,6 +1,6 @@
 # Phase 1 — Serverless Drop Target App (design)
 
-**Status:** approved design, pre-implementation
+**Status:** implemented
 **Date:** 2026-06-03
 **Phase:** 1 of the Cloud-Security Bot-Defense Lab (see `README.md`)
 
@@ -128,10 +128,16 @@ be repointed with minimal changes.
 
 ## Definition of done
 
-- [ ] `app/` Python handlers (authorizer, catalog, cart, checkout, admin) implemented with TDD.
-- [ ] `infra/modules/app/` Terraform: HTTP API, authorizer + 4 handler Lambdas, 5 least-privilege
+- [x] `app/` Python handlers (authorizer, catalog, cart, checkout, admin) implemented with TDD.
+- [x] `infra/modules/app/` Terraform: HTTP API, authorizer + 4 handler Lambdas, 5 least-privilege
       roles, 4 DynamoDB tables, SSM admin-secret param, stage access logging.
-- [ ] Module composed into `infra/envs/dev/main.tf`.
-- [ ] `pytest` green, including the concurrent oversell race test.
-- [ ] `terraform fmt -check`, `checkov -d infra/`, `trivy config infra/` pass (or justified skips).
-- [ ] Structured per-request JSON logging present and consistent across all handlers.
+- [x] Module composed into `infra/envs/dev/main.tf`.
+- [x] `pytest` green, including the concurrent oversell race test. (22/22, including the added
+      authorizer structured-logging tests from the Task 9 verification pass.)
+- [x] `terraform fmt -check`, `checkov -d infra/`, `trivy config infra/` pass (or justified skips).
+      Checkov: 157 passed / 0 failed / 46 skipped (justified inline `#checkov:skip` comments in
+      `infra/modules/app/{lambda,dynamodb,iam,api_gateway}.tf`, documented in the Task 9 report).
+      Trivy: 0 HIGH/CRITICAL misconfigurations.
+- [x] Structured per-request JSON logging present and consistent across all handlers. (Task 9
+      found the authorizer handler was missing its `log_request` call — fixed forward; all 5
+      handlers now import `log_request` from `common.logging` and call it on every exit path.)
