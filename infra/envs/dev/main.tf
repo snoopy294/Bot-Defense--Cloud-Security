@@ -92,3 +92,15 @@ module "app" {
   source      = "../../modules/app"
   environment = "dev"
 }
+
+# ---------------------------------------------------------------------------
+# Phase 2: observability / SOC data plane — Firehose -> S3 -> Athena for both
+# the app's structured logs and API Gateway access logs, correlated by
+# request_id.
+# ---------------------------------------------------------------------------
+module "logging" {
+  source               = "../../modules/logging"
+  environment          = "dev"
+  app_log_group_names  = module.app.app_log_group_names
+  apigw_log_group_name = module.app.access_log_group_name
+}

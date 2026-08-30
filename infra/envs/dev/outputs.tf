@@ -12,3 +12,13 @@ output "app_admin_secret_param_name" {
   description = "Populate this SSM parameter out-of-band before calling POST /admin/reset: aws ssm put-parameter --name <this> --type SecureString --value <secret>."
   value       = module.app.admin_secret_param_name
 }
+
+output "logs_bucket_name" {
+  description = "S3 bucket holding Phase 2 raw logs (app/ and apigw/ prefixes)."
+  value       = module.logging.logs_bucket_name
+}
+
+output "athena_workgroup" {
+  description = "Athena workgroup for querying Phase 2 logs. See docs/phase-2-observability.md for the join query."
+  value       = module.logging.athena_workgroup
+}
