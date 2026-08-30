@@ -44,6 +44,8 @@ resource "aws_cloudwatch_log_group" "firehose_errors" {
 # Hive-style time partitioning via Firehose's built-in prefix expressions
 # (delivery-time based) — no custom partitioning Lambda needed.
 resource "aws_kinesis_firehose_delivery_stream" "app_logs" {
+  #checkov:skip=CKV_AWS_240:Accepted — data lands SSE-S3-encrypted at rest in the destination bucket (see infra/modules/logging/s3.tf); no CMK for this lab's synthetic traffic logs, same tradeoff as the bucket itself.
+  #checkov:skip=CKV_AWS_241:Accepted — see CKV_AWS_240 above; a customer-managed KMS key adds cost with no meaningful risk reduction here.
   name        = "botdef-app-logs"
   destination = "extended_s3"
 
@@ -64,6 +66,8 @@ resource "aws_kinesis_firehose_delivery_stream" "app_logs" {
 }
 
 resource "aws_kinesis_firehose_delivery_stream" "apigw_logs" {
+  #checkov:skip=CKV_AWS_240:Accepted — see aws_kinesis_firehose_delivery_stream.app_logs above; same tradeoff.
+  #checkov:skip=CKV_AWS_241:Accepted — see aws_kinesis_firehose_delivery_stream.app_logs above; same tradeoff.
   name        = "botdef-apigw-logs"
   destination = "extended_s3"
 

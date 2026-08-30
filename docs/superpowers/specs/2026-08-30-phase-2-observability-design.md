@@ -1,6 +1,6 @@
 # Phase 2 — Observability / SOC Data Plane (design)
 
-**Status:** draft
+**Status:** implemented (static verification only — live end-to-end verification pending first real deploy; see docs/phase-2-observability.md)
 **Date:** 2026-08-30
 **Phase:** 2 of the Cloud-Security Bot-Defense Lab (see `README.md`)
 

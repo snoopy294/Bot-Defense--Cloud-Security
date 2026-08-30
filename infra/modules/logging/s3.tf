@@ -3,11 +3,11 @@ data "aws_caller_identity" "current" {}
 # Account ID is appended to keep the bucket name globally unique, matching
 # infra/bootstrap's state-bucket convention.
 resource "aws_s3_bucket" "logs" {
-  bucket = "botdef-logs-${var.environment}-${data.aws_caller_identity.current.account_id}"
-
   #checkov:skip=CKV_AWS_18:Accepted — access logging needs a second bucket + recurring cost; not justified for a single-user lab logs bucket. Revisit if multi-user.
   #checkov:skip=CKV_AWS_144:Accepted — cross-region replication is out of scope (YAGNI, doubles cost) for a personal lab.
   #checkov:skip=CKV2_AWS_62:Accepted — event notifications add no value for a log-landing bucket.
+  #checkov:skip=CKV_AWS_145:Accepted — same SSE-S3 (AES256) tradeoff as the encryption configuration resource below; no CMK for this lab's synthetic traffic logs.
+  bucket = "botdef-logs-${var.environment}-${data.aws_caller_identity.current.account_id}"
 }
 
 resource "aws_s3_bucket_versioning" "logs" {
@@ -17,7 +17,7 @@ resource "aws_s3_bucket_versioning" "logs" {
   }
 }
 
-resource "aws_s3_bucket_server_side_encryption_configuration" "logs" {
+resource "aws_s3_bucket_server_side_encryption_configuration" "logs" { #trivy:ignore:aws-0132 Accepted — SSE-S3 (AES256) default encryption; no CMK for this lab's synthetic logs (see checkov:skip=CKV_AWS_145 below for full rationale).
   bucket = aws_s3_bucket.logs.id
   rule {
     apply_server_side_encryption_by_default {
