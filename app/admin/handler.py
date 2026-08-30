@@ -40,11 +40,13 @@ def handler(event: dict, context) -> dict:
     start = time.time()
     headers = {k.lower(): v for k, v in (event.get("headers") or {}).items()}
     token = headers.get("x-admin-token")
+    request_id = event.get("requestContext", {}).get("requestId")
 
     if token != _admin_secret():
         result = json_response(401, {"error": "unauthorized"})
         log_request(route="POST /admin/reset", method="POST", status=401, start_time=start,
-                    session_id=None, product_id=None, outcome="unauthorized")
+                    session_id=None, product_id=None, outcome="unauthorized",
+                    request_id=request_id)
         return result
 
     products = json.loads(event.get("body") or "{}").get("products", [])
@@ -69,5 +71,5 @@ def handler(event: dict, context) -> dict:
 
     result = json_response(200, {"reset": len(products)})
     log_request(route="POST /admin/reset", method="POST", status=200, start_time=start,
-                session_id=None, product_id=None, outcome="ok")
+                session_id=None, product_id=None, outcome="ok", request_id=request_id)
     return result

@@ -22,6 +22,7 @@ def _orders_table():
 def handler(event: dict, context) -> dict:
     start = time.time()
     session_id = event["requestContext"]["authorizer"]["lambda"]["session_id"]
+    request_id = event.get("requestContext", {}).get("requestId")
     reservation_id = json.loads(event.get("body") or "{}").get("reservation_id")
     now = int(time.time())
 
@@ -31,13 +32,15 @@ def handler(event: dict, context) -> dict:
     if reservation is None or reservation["session_id"] != session_id:
         result = json_response(404, {"error": "not_found"})
         log_request(route="POST /checkout", method="POST", status=404, start_time=start,
-                    session_id=session_id, product_id=None, outcome="not_found")
+                    session_id=session_id, product_id=None, outcome="not_found",
+                    request_id=request_id)
         return result
 
     if reservation["status"] != "active" or now >= int(reservation["ttl"]):
         result = json_response(410, {"error": "expired"})
         log_request(route="POST /checkout", method="POST", status=410, start_time=start,
-                    session_id=session_id, product_id=reservation.get("product_id"), outcome="expired")
+                    session_id=session_id, product_id=reservation.get("product_id"),
+                    outcome="expired", request_id=request_id)
         return result
 
     order_id = str(uuid.uuid4())
@@ -57,5 +60,6 @@ def handler(event: dict, context) -> dict:
 
     result = json_response(200, {"order_id": order_id})
     log_request(route="POST /checkout", method="POST", status=200, start_time=start,
-                session_id=session_id, product_id=reservation["product_id"], outcome="ordered")
+                session_id=session_id, product_id=reservation["product_id"], outcome="ordered",
+                request_id=request_id)
     return result

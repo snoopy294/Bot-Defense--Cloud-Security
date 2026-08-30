@@ -13,9 +13,11 @@ def log_request(
     session_id: str | None,
     product_id: str | None,
     outcome: str,
+    request_id: str | None,
 ) -> None:
     print(json.dumps({
         "ts": time.time(),
+        "request_id": request_id,
         "session_id": session_id,
         "route": route,
         "method": method,

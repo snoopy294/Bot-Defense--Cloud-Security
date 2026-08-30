@@ -30,10 +30,12 @@ def _extract_session_id(event: dict) -> str | None:
 def handler(event: dict, context) -> dict:
     start = time.time()
     session_id = _extract_session_id(event)
+    request_id = event.get("requestContext", {}).get("requestId")
 
     if session_id is not None and not SESSION_ID_RE.match(session_id):
         log_request(route="authorizer", method="AUTH", status=401, start_time=start,
-                    session_id=session_id, product_id=None, outcome="invalid_session")
+                    session_id=session_id, product_id=None, outcome="invalid_session",
+                    request_id=request_id)
         return {"isAuthorized": False}
 
     table = _table()
@@ -48,7 +50,8 @@ def handler(event: dict, context) -> dict:
                 ExpressionAttributeValues={":one": 1},
             )
             log_request(route="authorizer", method="AUTH", status=200, start_time=start,
-                        session_id=session_id, product_id=None, outcome="existing_session")
+                        session_id=session_id, product_id=None, outcome="existing_session",
+                        request_id=request_id)
             return {
                 "isAuthorized": True,
                 "context": {"session_id": session_id, "is_new_session": "false"},
@@ -62,7 +65,8 @@ def handler(event: dict, context) -> dict:
         "request_count": 1,
     })
     log_request(route="authorizer", method="AUTH", status=200, start_time=start,
-                session_id=session_id, product_id=None, outcome="new_session")
+                session_id=session_id, product_id=None, outcome="new_session",
+                request_id=request_id)
     return {
         "isAuthorized": True,
         "context": {"session_id": session_id, "is_new_session": "true"},

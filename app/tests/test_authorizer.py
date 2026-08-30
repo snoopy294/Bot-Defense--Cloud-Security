@@ -41,7 +41,7 @@ def test_emits_structured_log_line_on_authorization(tables, capsys):
     handler(_event(None), None)
     line = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
     assert set(line.keys()) == {
-        "ts", "session_id", "route", "method", "status",
+        "ts", "request_id", "session_id", "route", "method", "status",
         "latency_ms", "product_id", "outcome",
     }
     assert line["status"] == 200

@@ -22,11 +22,13 @@ def test_log_request_emits_expected_fields(capsys):
         session_id="sess-1",
         product_id="prod-1",
         outcome="reserved",
+        request_id="req-1",
     )
     line = json.loads(capsys.readouterr().out.strip())
     assert set(line.keys()) == {
-        "ts", "session_id", "route", "method", "status",
+        "ts", "request_id", "session_id", "route", "method", "status",
         "latency_ms", "product_id", "outcome",
     }
+    assert line["request_id"] == "req-1"
     assert line["route"] == "POST /cart"
     assert line["outcome"] == "reserved"

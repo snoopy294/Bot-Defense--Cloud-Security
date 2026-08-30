@@ -32,6 +32,7 @@ def _serialize(item: dict, dropped: bool) -> dict:
 def handler(event: dict, context) -> dict:
     start = time.time()
     session_id = event["requestContext"]["authorizer"]["lambda"]["session_id"]
+    request_id = event.get("requestContext", {}).get("requestId")
     route = event["routeKey"]
     now = int(time.time())
     table = _table()
@@ -46,12 +47,13 @@ def handler(event: dict, context) -> dict:
             result = json_response(200, _serialize(item, now >= int(item["drop_at"])))
             outcome = "ok"
         log_request(route=route, method="GET", status=result["statusCode"],
-                    start_time=start, session_id=session_id, product_id=product_id, outcome=outcome)
+                    start_time=start, session_id=session_id, product_id=product_id,
+                    outcome=outcome, request_id=request_id)
         return result
 
     resp = table.query(IndexName="catalog-index", KeyConditionExpression=Key("catalog_pk").eq("PRODUCT"))
     items = [_serialize(item, now >= int(item["drop_at"])) for item in resp.get("Items", [])]
     result = json_response(200, items)
     log_request(route=route, method="GET", status=200, start_time=start,
-                session_id=session_id, product_id=None, outcome="ok")
+                session_id=session_id, product_id=None, outcome="ok", request_id=request_id)
     return result
