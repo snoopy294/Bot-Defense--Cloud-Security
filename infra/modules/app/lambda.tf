@@ -127,3 +127,36 @@ resource "aws_lambda_function" "admin" {
     variables = local.common_env
   }
 }
+
+# Explicit log groups (instead of relying on Lambda's implicit creation) so
+# Phase 2's subscription filters have something to attach to at apply time,
+# and so Terraform manages retention.
+resource "aws_cloudwatch_log_group" "authorizer" {
+  #checkov:skip=CKV_AWS_158:Accepted — see access_logs log group in api_gateway.tf; same lab-scale tradeoff (default AWS-managed encryption, no CMK).
+  name              = "/aws/lambda/${aws_lambda_function.authorizer.function_name}"
+  retention_in_days = 365
+}
+
+resource "aws_cloudwatch_log_group" "catalog" {
+  #checkov:skip=CKV_AWS_158:Accepted — see aws_cloudwatch_log_group.authorizer above.
+  name              = "/aws/lambda/${aws_lambda_function.catalog.function_name}"
+  retention_in_days = 365
+}
+
+resource "aws_cloudwatch_log_group" "cart" {
+  #checkov:skip=CKV_AWS_158:Accepted — see aws_cloudwatch_log_group.authorizer above.
+  name              = "/aws/lambda/${aws_lambda_function.cart.function_name}"
+  retention_in_days = 365
+}
+
+resource "aws_cloudwatch_log_group" "checkout" {
+  #checkov:skip=CKV_AWS_158:Accepted — see aws_cloudwatch_log_group.authorizer above.
+  name              = "/aws/lambda/${aws_lambda_function.checkout.function_name}"
+  retention_in_days = 365
+}
+
+resource "aws_cloudwatch_log_group" "admin" {
+  #checkov:skip=CKV_AWS_158:Accepted — see aws_cloudwatch_log_group.authorizer above.
+  name              = "/aws/lambda/${aws_lambda_function.admin.function_name}"
+  retention_in_days = 365
+}
