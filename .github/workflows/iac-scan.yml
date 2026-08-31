@@ -11,7 +11,6 @@ on:
 
 permissions:
   contents: read
-  security-events: write # upload SARIF to the Security tab
 
 jobs:
   scan:
@@ -29,8 +28,8 @@ jobs:
         with:
           directory: infra/
           framework: terraform
-          output_format: cli,sarif
-          output_file_path: console,checkov.sarif
+          output_format: cli
+          output_file_path: console
           soft_fail: false # fail the build on a HIGH/CRITICAL finding
 
       # Trivy config scan (this is the maintained successor to tfsec).
@@ -41,12 +40,4 @@ jobs:
           scan-ref: infra/
           exit-code: "1"
           severity: HIGH,CRITICAL
-          format: sarif
-          output: trivy.sarif
-
-      - name: Upload Checkov SARIF
-        if: always()
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: checkov.sarif
-          category: checkov
+          format: table
