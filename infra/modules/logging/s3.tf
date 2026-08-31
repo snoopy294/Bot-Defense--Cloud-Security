@@ -8,6 +8,11 @@ resource "aws_s3_bucket" "logs" {
   #checkov:skip=CKV2_AWS_62:Accepted — event notifications add no value for a log-landing bucket.
   #checkov:skip=CKV_AWS_145:Accepted — same SSE-S3 (AES256) tradeoff as the encryption configuration resource below; no CMK for this lab's synthetic traffic logs.
   bucket = "botdef-logs-${var.environment}-${data.aws_caller_identity.current.account_id}"
+  # force_destroy so `terraform destroy` can tear this bucket down between lab sessions even after
+  # it holds objects (versioning is on, which otherwise blocks destroy on a non-empty bucket).
+  # Accepted for this 30-day-expiry lab log bucket — same cost/lab-scale tradeoff as the other
+  # accepted skips above. No dedicated checkov/trivy rule currently flags force_destroy alone.
+  force_destroy = true
 }
 
 resource "aws_s3_bucket_versioning" "logs" {

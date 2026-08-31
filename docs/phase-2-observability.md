@@ -11,9 +11,13 @@ Athena. See `docs/superpowers/specs/2026-08-30-phase-2-observability-design.md` 
   reformatted to the Phase 2 schema (`request_id, ts, source_ip, user_agent, route, method,
   status, latency_ms, integration_error`).
 - `infra/modules/logging/`: S3 bucket (`botdef-logs-dev-<account_id>`), two Firehose delivery
-  streams (`botdef-app-logs`, `botdef-apigw-logs`), CloudWatch subscription filters wiring both
-  log sources into their stream, and two Glue/Athena tables (`app_logs`, `apigw_logs`) in the
-  `botdef_logs_dev` database, queryable through the `botdef-analytics` Athena workgroup.
+  streams (`botdef-app-logs-dev`, `botdef-apigw-logs-dev`), CloudWatch subscription filters wiring
+  both log sources into their stream, and two Glue/Athena tables (`app_logs`, `apigw_logs`) in the
+  `botdef_logs_dev` database, queryable through the `botdef-analytics-dev` Athena workgroup. Each
+  Firehose stream's `processing_configuration` runs Firehose's native `Decompression` +
+  `CloudWatchLogProcessing` processors to unwrap the gzip-compressed CloudWatch Logs subscription
+  envelope and extract the raw log line before it lands in S3 — this is the "no transform Lambda"
+  mechanism referenced below; it's a built-in Firehose feature, not custom code.
 
 ## Cost
 
@@ -56,7 +60,7 @@ aws s3 ls "s3://$bucket/app/" --recursive
 aws s3 ls "s3://$bucket/apigw/" --recursive
 ```
 
-3. In the Athena console (or CLI), select workgroup `botdef-analytics` and database
+3. In the Athena console (or CLI), select workgroup `botdef-analytics-dev` and database
    `botdef_logs_dev`, then run:
 
 ```sql
@@ -78,5 +82,8 @@ WHERE a.year = '<yyyy>' AND a.month = '<mm>' AND a.day = '<dd>';
 
 - No CloudFront/WAF logs yet — Phase 3.
 - No transform/normalization Lambda — Athena JOIN on `request_id` is sufficient at this scale.
+  Firehose's own native Decompression + CloudWatchLogProcessing processors (configured in
+  `processing_configuration`) handle unwrapping the CloudWatch Logs envelope; that's Firehose
+  built-in functionality, not a custom transform.
 - No Glue crawler — schema is static and defined directly in Terraform.
 - 30-day log retention, no Glacier tiering — not needed for an actively destroyed dev environment.

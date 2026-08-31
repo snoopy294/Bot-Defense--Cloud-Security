@@ -151,7 +151,7 @@ resource "aws_glue_catalog_table" "app_logs" {
 }
 
 resource "aws_athena_workgroup" "analytics" {
-  name = "botdef-analytics"
+  name = "botdef-analytics-${var.environment}"
 
   configuration {
     enforce_workgroup_configuration    = true
