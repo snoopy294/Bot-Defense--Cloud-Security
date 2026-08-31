@@ -12,3 +12,8 @@ output "glue_database" {
   description = "Glue Catalog database name containing the app_logs and apigw_logs tables."
   value       = aws_glue_catalog_database.logs.name
 }
+
+output "logs_bucket_arn" {
+  description = "ARN of the Phase 2 logs bucket, consumed by Phase 3's waf module to scope its Firehose delivery IAM policy."
+  value       = aws_s3_bucket.logs.arn
+}
