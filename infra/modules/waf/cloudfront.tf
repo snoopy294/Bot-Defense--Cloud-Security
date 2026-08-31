@@ -35,10 +35,13 @@ resource "aws_cloudfront_distribution" "app" {
 
     # AWS-managed policies instead of the legacy forwarded_values block:
     # CachingDisabled (this proxies a dynamic, session-authenticated API, not
-    # static assets) + AllViewer (forwards every header/cookie/query string
-    # through, which the app's session-cookie authorizer requires).
+    # static assets) + AllViewerExceptHostHeader (forwards every
+    # cookie/query string through, which the app's session-cookie authorizer
+    # requires, but excludes the Host header — API Gateway's execute-api
+    # endpoint routes on Host, so forwarding the viewer's CloudFront Host
+    # value instead of API Gateway's own hostname makes every request 403).
     cache_policy_id          = "4135ea2d-6df8-44a3-9df3-4b5a84be39ad" # Managed-CachingDisabled
-    origin_request_policy_id = "216adef6-5c7f-47e4-b989-5492eafa07d3" # Managed-AllViewer
+    origin_request_policy_id = "b689b0a8-53d0-40ab-baf2-68738e2966ac" # Managed-AllViewerExceptHostHeader
   }
 
   restrictions {

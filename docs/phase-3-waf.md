@@ -89,6 +89,11 @@ LIMIT 10;
 - No CloudFront access logging (separate from WAF logging) — would duplicate the WAF request log
   signal for no added detection value at this lab's scale.
 - No custom domain/ACM certificate — uses the CloudFront default certificate (`*.cloudfront.net`).
+- No enforcement that traffic goes through CloudFront — the API Gateway invoke URL
+  (`app_api_endpoint`) stays publicly reachable, so the WAF can be bypassed by hitting the origin
+  directly. A lab-grade mitigation (CloudFront custom-header shared secret validated by the
+  authorizer, or an API Gateway resource policy) is out of scope for this phase. Phase 4's traffic
+  generator must be pointed at the CloudFront domain by convention, not enforcement.
 
 ## Static verification
 
