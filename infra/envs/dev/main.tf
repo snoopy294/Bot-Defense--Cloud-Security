@@ -104,3 +104,16 @@ module "logging" {
   app_log_group_names  = module.app.app_log_group_names
   apigw_log_group_name = module.app.access_log_group_name
 }
+
+# ---------------------------------------------------------------------------
+# Phase 3: cloud-native bot defense — CloudFront + WAF in front of the app's
+# API Gateway, with WAF request logs flowing into the Phase 2 logs bucket.
+# ---------------------------------------------------------------------------
+module "waf" {
+  source           = "../../modules/waf"
+  environment      = "dev"
+  api_domain_name  = module.app.api_domain_name
+  logs_bucket_name = module.logging.logs_bucket_name
+  logs_bucket_arn  = module.logging.logs_bucket_arn
+  glue_database    = module.logging.glue_database
+}

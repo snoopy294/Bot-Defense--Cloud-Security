@@ -22,3 +22,13 @@ output "athena_workgroup" {
   description = "Athena workgroup for querying Phase 2 logs. See docs/phase-2-observability.md for the join query."
   value       = module.logging.athena_workgroup
 }
+
+output "cloudfront_domain_name" {
+  description = "Public entry point for the drop app after Phase 3 (CloudFront + WAF). GET <this>/products to smoke-test through the new edge layer."
+  value       = module.waf.cloudfront_domain_name
+}
+
+output "waf_web_acl_arn" {
+  description = "ARN of the Phase 3 WAF Web ACL protecting the CloudFront distribution."
+  value       = module.waf.web_acl_arn
+}
