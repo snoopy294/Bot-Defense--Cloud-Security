@@ -39,3 +39,8 @@ output "access_log_group_arn" {
   description = "ARN of the API Gateway access log group, consumed by Phase 2's logging module IAM policy for its subscription filter."
   value       = aws_cloudwatch_log_group.access_logs.arn
 }
+
+output "api_domain_name" {
+  description = "Bare hostname (no scheme) of the drop app's API Gateway invoke URL, consumed by Phase 3's waf module as the CloudFront origin domain."
+  value       = replace(aws_apigatewayv2_stage.default.invoke_url, "https://", "")
+}
