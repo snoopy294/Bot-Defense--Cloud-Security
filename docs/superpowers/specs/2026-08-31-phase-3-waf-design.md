@@ -1,6 +1,6 @@
 # Phase 3 — Cloud-Native Bot Defense (WAF) (design)
 
-**Status:** design
+**Status:** implemented (static verification only — live end-to-end verification pending first real deploy; see docs/phase-3-waf.md)
 **Date:** 2026-08-31
 **Phase:** 3 of the Cloud-Security Bot-Defense Lab (see `README.md`)
 
