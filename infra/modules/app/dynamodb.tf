@@ -1,4 +1,5 @@
 resource "aws_dynamodb_table" "sessions" {
+  #checkov:skip=CKV_AWS_28:Accepted — temporary lab disables PITR to avoid backup charges; dev enables it by default.
   name         = "botdef-sessions"
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "session_id"
@@ -25,6 +26,7 @@ resource "aws_dynamodb_table" "sessions" {
 # Query the catalog-index GSI instead of Scan — catalog-fn's IAM policy
 # grants Query but not Scan (see spec Security section + plan Task 3).
 resource "aws_dynamodb_table" "products" {
+  #checkov:skip=CKV_AWS_28:Accepted — temporary lab disables PITR to avoid backup charges; dev enables it by default.
   name         = "botdef-products"
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "product_id"
@@ -52,6 +54,7 @@ resource "aws_dynamodb_table" "products" {
 }
 
 resource "aws_dynamodb_table" "reservations" {
+  #checkov:skip=CKV_AWS_28:Accepted — temporary lab disables PITR to avoid backup charges; dev enables it by default.
   name         = "botdef-reservations"
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "reservation_id"
@@ -73,6 +76,7 @@ resource "aws_dynamodb_table" "reservations" {
 }
 
 resource "aws_dynamodb_table" "orders" {
+  #checkov:skip=CKV_AWS_28:Accepted — temporary lab disables PITR to avoid backup charges; dev enables it by default.
   name         = "botdef-orders"
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "order_id"

@@ -60,6 +60,7 @@ resource "aws_lambda_permission" "fn_invoke" {
 }
 
 resource "aws_cloudwatch_log_group" "access_logs" {
+  #checkov:skip=CKV_AWS_338:Accepted — temporary lab retains logs for one day to minimize cost; dev retains one year.
   #checkov:skip=CKV_AWS_158:Accepted — default AWS-managed encryption on CloudWatch Logs is
   #sufficient for this lab's access logs; a customer-managed KMS key adds a new resource with
   #no meaningful risk reduction for non-sensitive access-log data. Revisit if PII enters logs.
