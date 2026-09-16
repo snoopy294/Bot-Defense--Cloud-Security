@@ -189,7 +189,10 @@ def build_adapters(cfg: dict, session: requests.Session) -> list:
 def run_cycle(adapters: list, notifier: Notifier, seen: dict, alerted: dict,
               alert_types: set | None = None,
               price_filter: PriceFilter | None = None,
-              renotify: Renotify | None = None) -> None:
+              renotify: Renotify | None = None,
+              deliveries: dict | None = None) -> None:
+    if deliveries is None:
+        deliveries = {}
     now = time.time()
     for adapter in adapters:
         if adapter.paused:
@@ -197,7 +200,6 @@ def run_cycle(adapters: list, notifier: Notifier, seen: dict, alerted: dict,
             log.info("%-12s (cooling down %ds, skipped)", adapter.name, remaining)
             continue
         for r in adapter.check():
-            was = seen.get(r.key, False)
             status = r.label if r.in_stock else "out"
             log.info("%-12s %-18s %s", r.retailer, status, r.name)
             # Alert on the unavailable -> available transition so you're not
@@ -209,18 +211,23 @@ def run_cycle(adapters: list, notifier: Notifier, seen: dict, alerted: dict,
             wanted = alert_types is None or r.availability_type in alert_types
             priced_ok = price_filter is None or price_filter.allows(r)
             if r.in_stock and wanted and priced_ok:
-                first_time = not was
+                first_time = r.key not in alerted
                 due = (
                     renotify is not None
                     and r.availability_type in renotify.types
                     and (now - alerted.get(r.key, 0.0)) >= renotify.interval_seconds
                 )
-                if first_time or due:
-                    notifier.send(r)
-                    alerted[r.key] = now
+                if first_time or due or r.key in deliveries:
+                    outcomes = notifier.send(r, skip_channels=deliveries.get(r.key, []))
+                    if outcomes and all(outcomes.values()):
+                        alerted[r.key] = now
+                        deliveries.pop(r.key, None)
+                    else:
+                        deliveries[r.key] = [channel for channel, ok in outcomes.items() if ok]
             if not r.in_stock:
                 # Reset the alert clock so the NEXT restock alerts immediately.
                 alerted.pop(r.key, None)
+                deliveries.pop(r.key, None)
             seen[r.key] = r.in_stock
 
 
@@ -287,7 +294,7 @@ def main() -> int:
 
     state_file = cfg.get("state_file", "monitor_state.json")
     st = state.load(state_file)
-    seen, alerted = st["seen"], st["alerted"]
+    seen, alerted, deliveries = st["seen"], st["alerted"], st["deliveries"]
 
     interval = int(cfg.get("poll_interval_seconds", 90))
     jitter = int(cfg.get("jitter_seconds", 30))
@@ -335,8 +342,8 @@ def main() -> int:
         while True:
             try:
                 run_cycle(adapters, notifier, seen, alerted, alert_types,
-                          price_filter, renotify)
-                state.save(state_file, {"seen": seen, "alerted": alerted})
+                          price_filter, renotify, deliveries)
+                state.save(state_file, {"seen": seen, "alerted": alerted, "deliveries": deliveries})
             except Exception as e:  # noqa: BLE001 - keep the loop alive 24/7
                 log.exception("cycle error: %s", e)
 

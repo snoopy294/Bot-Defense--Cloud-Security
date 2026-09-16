@@ -1,0 +1,2 @@
+-r app/requirements.txt
+-r pokemon-monitor/requirements.txt

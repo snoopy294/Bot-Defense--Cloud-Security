@@ -3,6 +3,12 @@ variable "environment" {
   type        = string
 }
 
+variable "origin_secret" {
+  description = "Secret sent only from CloudFront to the app authorizer."
+  type        = string
+  sensitive   = true
+}
+
 variable "api_domain_name" {
   description = "Bare hostname of the app's API Gateway invoke URL (module.app.api_domain_name), used as the CloudFront origin domain."
   type        = string

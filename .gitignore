@@ -5,8 +5,9 @@
 .env.*
 **/credentials
 aws-credentials*
-*.tfvars            # may contain account IDs / sensitive values
-!*.tfvars.example   # but keep the example templates
+# Local values may contain account IDs / sensitive values; keep only templates.
+*.tfvars
+!*.tfvars.example
 
 # pokemon-monitor live config holds a real Discord webhook — keep only the template
 config.yaml
@@ -38,9 +39,13 @@ override.tf.json
 terraform.rc
 tfplan
 *.tfplan
+backend.hcl
+infra/modules/app/build/
 
 # ---- Python ----
 .venv/
+.venv-verify/
+artifacts/
 **/.venv/
 __pycache__/
 *.py[cod]

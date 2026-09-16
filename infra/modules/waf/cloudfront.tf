@@ -19,6 +19,11 @@ resource "aws_cloudfront_distribution" "app" {
     domain_name = var.api_domain_name
     origin_id   = "app-api-gateway"
 
+    custom_header {
+      name  = "X-Origin-Verify"
+      value = var.origin_secret
+    }
+
     custom_origin_config {
       http_port              = 80
       https_port             = 443

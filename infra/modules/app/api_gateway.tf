@@ -10,8 +10,9 @@ resource "aws_apigatewayv2_authorizer" "session" {
   authorizer_uri                    = aws_lambda_function.authorizer.invoke_arn
   authorizer_payload_format_version = "2.0"
   enable_simple_responses           = true
-  identity_sources                  = ["$request.header.Cookie"]
-  authorizer_result_ttl_in_seconds  = 0
+  # No identity-source precheck: fresh visitors have no cookie. The authorizer
+  # validates the origin header and then creates or verifies the session.
+  authorizer_result_ttl_in_seconds = 0
 }
 
 resource "aws_lambda_permission" "authorizer_invoke" {
@@ -63,13 +64,18 @@ resource "aws_cloudwatch_log_group" "access_logs" {
   #sufficient for this lab's access logs; a customer-managed KMS key adds a new resource with
   #no meaningful risk reduction for non-sensitive access-log data. Revisit if PII enters logs.
   name              = "/botdef/app/access-logs"
-  retention_in_days = 365 # CKV_AWS_338: retain at least 1 year
+  retention_in_days = var.log_retention_days
 }
 
 resource "aws_apigatewayv2_stage" "default" {
   api_id      = aws_apigatewayv2_api.app.id
   name        = "$default"
   auto_deploy = true
+
+  default_route_settings {
+    throttling_rate_limit  = var.api_rate_limit
+    throttling_burst_limit = var.api_burst_limit
+  }
 
   access_log_settings {
     destination_arn = aws_cloudwatch_log_group.access_logs.arn

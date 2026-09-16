@@ -2,7 +2,10 @@ data "archive_file" "app" {
   type        = "zip"
   source_dir  = "${path.module}/../../../app"
   output_path = "${path.module}/build/app.zip"
-  excludes    = ["tests", "requirements.txt", "pytest.ini", "README.md"]
+  excludes = concat(
+    ["tests", ".pytest_cache", "requirements.txt", "pytest.ini", "README.md"],
+    tolist(fileset("${path.module}/../../../app", "**/__pycache__/**"))
+  )
 }
 
 locals {
@@ -34,7 +37,7 @@ resource "aws_lambda_function" "authorizer" {
   handler                        = "authorizer.handler.handler"
   runtime                        = "python3.12"
   timeout                        = 5
-  reserved_concurrent_executions = 20
+  reserved_concurrent_executions = var.reserved_concurrency
   filename                       = data.archive_file.app.output_path
   source_code_hash               = data.archive_file.app.output_base64sha256
 
@@ -44,7 +47,7 @@ resource "aws_lambda_function" "authorizer" {
   #checkov:skip=CKV_AWS_117:Accepted — see note above.
   #checkov:skip=CKV_AWS_50:Accepted — see note above.
   environment {
-    variables = local.common_env
+    variables = merge(local.common_env, var.direct_lab_access ? {} : { ORIGIN_SECRET = var.origin_secret })
   }
 }
 
@@ -54,7 +57,7 @@ resource "aws_lambda_function" "catalog" {
   handler                        = "catalog.handler.handler"
   runtime                        = "python3.12"
   timeout                        = 5
-  reserved_concurrent_executions = 20
+  reserved_concurrent_executions = var.reserved_concurrency
   filename                       = data.archive_file.app.output_path
   source_code_hash               = data.archive_file.app.output_base64sha256
 
@@ -74,7 +77,7 @@ resource "aws_lambda_function" "cart" {
   handler                        = "cart.handler.handler"
   runtime                        = "python3.12"
   timeout                        = 5
-  reserved_concurrent_executions = 20
+  reserved_concurrent_executions = var.reserved_concurrency
   filename                       = data.archive_file.app.output_path
   source_code_hash               = data.archive_file.app.output_base64sha256
 
@@ -94,7 +97,7 @@ resource "aws_lambda_function" "checkout" {
   handler                        = "checkout.handler.handler"
   runtime                        = "python3.12"
   timeout                        = 5
-  reserved_concurrent_executions = 20
+  reserved_concurrent_executions = var.reserved_concurrency
   filename                       = data.archive_file.app.output_path
   source_code_hash               = data.archive_file.app.output_base64sha256
 
@@ -114,7 +117,7 @@ resource "aws_lambda_function" "admin" {
   handler                        = "admin.handler.handler"
   runtime                        = "python3.12"
   timeout                        = 5
-  reserved_concurrent_executions = 20
+  reserved_concurrent_executions = var.reserved_concurrency
   filename                       = data.archive_file.app.output_path
   source_code_hash               = data.archive_file.app.output_base64sha256
 
@@ -134,29 +137,29 @@ resource "aws_lambda_function" "admin" {
 resource "aws_cloudwatch_log_group" "authorizer" {
   #checkov:skip=CKV_AWS_158:Accepted — see access_logs log group in api_gateway.tf; same lab-scale tradeoff (default AWS-managed encryption, no CMK).
   name              = "/aws/lambda/${aws_lambda_function.authorizer.function_name}"
-  retention_in_days = 365
+  retention_in_days = var.log_retention_days
 }
 
 resource "aws_cloudwatch_log_group" "catalog" {
   #checkov:skip=CKV_AWS_158:Accepted — see aws_cloudwatch_log_group.authorizer above.
   name              = "/aws/lambda/${aws_lambda_function.catalog.function_name}"
-  retention_in_days = 365
+  retention_in_days = var.log_retention_days
 }
 
 resource "aws_cloudwatch_log_group" "cart" {
   #checkov:skip=CKV_AWS_158:Accepted — see aws_cloudwatch_log_group.authorizer above.
   name              = "/aws/lambda/${aws_lambda_function.cart.function_name}"
-  retention_in_days = 365
+  retention_in_days = var.log_retention_days
 }
 
 resource "aws_cloudwatch_log_group" "checkout" {
   #checkov:skip=CKV_AWS_158:Accepted — see aws_cloudwatch_log_group.authorizer above.
   name              = "/aws/lambda/${aws_lambda_function.checkout.function_name}"
-  retention_in_days = 365
+  retention_in_days = var.log_retention_days
 }
 
 resource "aws_cloudwatch_log_group" "admin" {
   #checkov:skip=CKV_AWS_158:Accepted — see aws_cloudwatch_log_group.authorizer above.
   name              = "/aws/lambda/${aws_lambda_function.admin.function_name}"
-  retention_in_days = 365
+  retention_in_days = var.log_retention_days
 }

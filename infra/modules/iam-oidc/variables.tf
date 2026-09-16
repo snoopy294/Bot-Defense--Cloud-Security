@@ -6,7 +6,7 @@ variable "github_repo" {
 variable "allowed_refs" {
   description = "Git refs allowed to assume the role (the sub-claim suffixes)."
   type        = list(string)
-  default     = ["ref:refs/heads/main", "pull_request"]
+  default     = ["ref:refs/heads/main"]
 }
 
 variable "role_name" {

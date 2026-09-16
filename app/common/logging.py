@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import time
 
 
@@ -18,7 +19,7 @@ def log_request(
     print(json.dumps({
         "ts": time.time(),
         "request_id": request_id,
-        "session_id": session_id,
+        "session_id": hashlib.sha256(session_id.encode()).hexdigest() if session_id else None,
         "route": route,
         "method": method,
         "status": status,

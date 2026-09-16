@@ -50,27 +50,39 @@ class Notifier:
         self.cfg = cfg or {}
         self.session = session
 
-    def send(self, r: StockResult) -> None:
+    def send(self, r: StockResult, *, skip_channels=()) -> dict[str, bool]:
+        """Return delivery outcomes; retries can skip already delivered channels."""
+        outcomes = {}
         ntfy = self.cfg.get("ntfy", {})
         if ntfy.get("enabled") and ntfy.get("topic"):
+            outcomes["ntfy"] = "ntfy" in skip_channels
             try:
-                self._ntfy(ntfy, r)
+                if not outcomes["ntfy"]:
+                    self._ntfy(ntfy, r)
+                    outcomes["ntfy"] = True
             except Exception as e:  # noqa: BLE001
                 log.warning("ntfy notify failed: %s", e)
 
         disc = self.cfg.get("discord", {})
         if disc.get("enabled") and disc.get("webhook_url"):
+            outcomes["discord"] = "discord" in skip_channels
             try:
-                self._discord(disc["webhook_url"], r)
+                if not outcomes["discord"]:
+                    self._discord(disc["webhook_url"], r)
+                    outcomes["discord"] = True
             except Exception as e:  # noqa: BLE001
                 log.warning("discord notify failed: %s", e)
 
         email = self.cfg.get("email", {})
         if email.get("enabled"):
+            outcomes["email"] = "email" in skip_channels
             try:
-                self._email(email, r)
+                if not outcomes["email"]:
+                    self._email(email, r)
+                    outcomes["email"] = True
             except Exception as e:  # noqa: BLE001
                 log.warning("email notify failed: %s", e)
+        return outcomes
 
     def heartbeat(self, watching: int) -> None:
         """Send a low-priority 'still alive' ping via ntfy, if enabled."""
@@ -147,8 +159,7 @@ class Notifier:
             if not val
         ]
         if missing:
-            log.warning("email misconfigured: missing %s", ", ".join(missing))
-            return
+            raise ValueError("email misconfigured: missing " + ", ".join(missing))
 
         msg = EmailMessage()
         msg["Subject"] = f"{self._headline(r, _style(r))}: {r.name} ({r.retailer})"

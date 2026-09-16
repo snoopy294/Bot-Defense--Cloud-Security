@@ -121,7 +121,7 @@ resource "aws_iam_role_policy" "checkout" {
       },
       {
         Effect   = "Allow"
-        Action   = ["dynamodb:PutItem"]
+        Action   = ["dynamodb:PutItem", "dynamodb:GetItem"]
         Resource = aws_dynamodb_table.orders.arn
       },
       local.logs_statement,

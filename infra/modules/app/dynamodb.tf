@@ -17,7 +17,7 @@ resource "aws_dynamodb_table" "sessions" {
   # for all 4 app tables in this lab; a customer-managed KMS key adds cost/complexity with no
   # meaningful risk reduction for synthetic drop-app data. Revisit if real PII is ever stored.
   point_in_time_recovery {
-    enabled = true
+    enabled = var.enable_point_in_time_recovery
   }
 }
 
@@ -47,7 +47,7 @@ resource "aws_dynamodb_table" "products" {
 
   # checkov:skip=CKV_AWS_119:Accepted — see sessions table above; same lab-scale tradeoff.
   point_in_time_recovery {
-    enabled = true
+    enabled = var.enable_point_in_time_recovery
   }
 }
 
@@ -68,7 +68,7 @@ resource "aws_dynamodb_table" "reservations" {
 
   # checkov:skip=CKV_AWS_119:Accepted — see sessions table above; same lab-scale tradeoff.
   point_in_time_recovery {
-    enabled = true
+    enabled = var.enable_point_in_time_recovery
   }
 }
 
@@ -84,6 +84,6 @@ resource "aws_dynamodb_table" "orders" {
 
   # checkov:skip=CKV_AWS_119:Accepted — see sessions table above; same lab-scale tradeoff.
   point_in_time_recovery {
-    enabled = true
+    enabled = var.enable_point_in_time_recovery
   }
 }

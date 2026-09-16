@@ -1,14 +1,16 @@
 from __future__ import annotations
 
-import json
 import os
 import time
-from decimal import Decimal
+import hmac
+from decimal import Decimal, DecimalException
 
 import boto3
+from boto3.dynamodb.types import TypeSerializer
 
 from common.logging import log_request
 from common.responses import json_response
+from common.validation import endpoint, body_object, identifier, InvalidRequest
 
 
 def _ssm():
@@ -36,20 +38,46 @@ def _clear_table(table, key_name: str) -> None:
             scan_kwargs["ExclusiveStartKey"] = resp["LastEvaluatedKey"]
 
 
+@endpoint
 def handler(event: dict, context) -> dict:
     start = time.time()
     headers = {k.lower(): v for k, v in (event.get("headers") or {}).items()}
     token = headers.get("x-admin-token")
     request_id = event.get("requestContext", {}).get("requestId")
 
-    if token != _admin_secret():
+    if not token or not hmac.compare_digest(token.encode(), _admin_secret().encode()):
         result = json_response(401, {"error": "unauthorized"})
         log_request(route="POST /admin/reset", method="POST", status=401, start_time=start,
                     session_id=None, product_id=None, outcome="unauthorized",
                     request_id=request_id)
         return result
 
-    products = json.loads(event.get("body") or "{}").get("products", [])
+    products = body_object(event).get("products")
+    if not isinstance(products, list):
+        raise InvalidRequest("invalid_products")
+    seen = set()
+    for product in products:
+        if not isinstance(product, dict):
+            raise InvalidRequest("invalid_product")
+        product_id = identifier(product.get("product_id"))
+        if product_id in seen:
+            raise InvalidRequest("duplicate_product")
+        seen.add(product_id)
+        if not isinstance(product.get("title"), str) or not product["title"].strip() or len(product["title"]) > 500:
+            raise InvalidRequest("invalid_title")
+        for key in ("stock", "drop_at"):
+            if type(product.get(key)) is not int or product[key] < 0:
+                raise InvalidRequest(f"invalid_{key}")
+        if type(product.get("price")) not in (int, float):
+            raise InvalidRequest("invalid_price")
+        price = Decimal(str(product["price"]))
+        if not price.is_finite() or price < 0:
+            raise InvalidRequest("invalid_price")
+        try:
+            for value in (price, product["stock"], product["drop_at"]):
+                TypeSerializer().serialize(value)
+        except (TypeError, ValueError, DecimalException) as exc:
+            raise InvalidRequest("invalid_number") from exc
 
     _clear_table(_table("RESERVATIONS_TABLE"), "reservation_id")
     _clear_table(_table("ORDERS_TABLE"), "order_id")

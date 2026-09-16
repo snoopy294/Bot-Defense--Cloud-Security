@@ -1,10 +1,12 @@
 """Persistent dedupe state.
 
-Tracks two things per product key so the monitor behaves well across restarts:
+Tracks delivery state per product key across restarts:
   - `seen`:    the last-known in-stock flag, so we only alert on a genuine
                out -> available transition and don't re-spam on restart.
   - `alerted`: the epoch time we last sent an alert, so re-notify reminders can
                re-ping a still-available preorder/pickup after an interval.
+  - `deliveries`: successful channels for a partially delivered alert, so a
+                  retry only sends to the remaining channels.
 
 State is a JSON object with those two sub-maps:
     {"seen": {"<key>": true, ...}, "alerted": {"<key>": 1735700000.0, ...}}
@@ -25,11 +27,11 @@ log = logging.getLogger(__name__)
 
 
 def _empty() -> dict:
-    return {"seen": {}, "alerted": {}}
+    return {"seen": {}, "alerted": {}, "deliveries": {}}
 
 
 def load(path: str) -> dict:
-    """Return {"seen": {key: bool}, "alerted": {key: float}}.
+    """Return seen, alerted and pending-delivery maps.
 
     Tolerates a legacy flat {key: bool} file (wraps it as the seen-map) and any
     corrupt/missing file (returns empty state) so startup never crashes.
@@ -45,10 +47,12 @@ def load(path: str) -> dict:
             return {
                 "seen": {str(k): bool(v) for k, v in seen.items()},
                 "alerted": {str(k): float(v) for k, v in alerted.items()},
+                "deliveries": {str(k): list(v) for k, v in (data.get("deliveries") or {}).items()
+                               if isinstance(v, list)},
             }
         if isinstance(data, dict):
             # Legacy flat seen-map: migrate to the two-section shape.
-            return {"seen": {str(k): bool(v) for k, v in data.items()}, "alerted": {}}
+            return {"seen": {str(k): bool(v) for k, v in data.items()}, "alerted": {}, "deliveries": {}}
         log.warning("state file %s is not an object; ignoring", path)
     except Exception as e:  # noqa: BLE001 - corrupt state shouldn't crash startup
         log.warning("could not read state file %s: %s", path, e)

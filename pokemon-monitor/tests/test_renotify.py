@@ -37,8 +37,9 @@ class _FakeNotifier:
     def __init__(self):
         self.sent = []
 
-    def send(self, r):
+    def send(self, r, *, skip_channels=()):
         self.sent.append(r)
+        return {"fake": True}
 
 
 class _FakeAdapter:

@@ -4,7 +4,7 @@ output "github_actions_role_arn" {
 }
 
 output "app_api_endpoint" {
-  description = "Invoke URL for the Phase 1 drop app. GET <this>/products to smoke-test."
+  description = "Origin URL for negative smoke tests. Direct requests must be rejected; use cloudfront_domain_name for the app."
   value       = module.app.api_endpoint
 }
 

@@ -44,3 +44,6 @@ output "api_domain_name" {
   description = "Bare hostname (no scheme) of the drop app's API Gateway invoke URL, consumed by Phase 3's waf module as the CloudFront origin domain."
   value       = replace(aws_apigatewayv2_stage.default.invoke_url, "https://", "")
 }
+output "products_table_name" {
+  value = aws_dynamodb_table.products.name
+}

@@ -2,3 +2,4 @@
 region             = "us-east-1"
 github_repo        = "OWNER/bot-defense-lab" # e.g. "liude/bot-defense-lab"
 budget_alert_email = "liuderek078@gmail.com"
+state_kms_key_arn  = "arn:aws:kms:us-east-1:REPLACE_WITH_ACCOUNT_ID:key/REPLACE_WITH_KEY_ID" # bootstrap output state_kms_key_arn

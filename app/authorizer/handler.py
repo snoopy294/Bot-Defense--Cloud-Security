@@ -4,6 +4,8 @@ import os
 import re
 import time
 import uuid
+import hmac
+from http.cookies import SimpleCookie, CookieError
 
 import boto3
 
@@ -20,19 +22,29 @@ def _table():
 
 
 def _extract_session_id(event: dict) -> str | None:
-    for cookie in event.get("cookies") or []:
-        name, _, value = cookie.partition("=")
-        if name == "session_id":
-            return value
+    headers = {k.lower(): v for k, v in (event.get("headers") or {}).items()}
+    for cookie in event.get("cookies") or [headers.get("cookie", "")]:
+        parsed = SimpleCookie()
+        try:
+            parsed.load(cookie)
+        except CookieError:
+            continue
+        if "session_id" in parsed:
+            return parsed["session_id"].value
     return None
 
 
 def handler(event: dict, context) -> dict:
     start = time.time()
+    origin_secret = os.environ.get("ORIGIN_SECRET")
+    headers = {k.lower(): v for k, v in (event.get("headers") or {}).items()}
+    if origin_secret is not None and (not origin_secret or not hmac.compare_digest(
+            headers.get("x-origin-verify", "").encode(), origin_secret.encode())):
+        return {"isAuthorized": False}
     session_id = _extract_session_id(event)
     request_id = event.get("requestContext", {}).get("requestId")
 
-    if session_id is not None and not SESSION_ID_RE.match(session_id):
+    if session_id is not None and not SESSION_ID_RE.fullmatch(session_id):
         log_request(route="authorizer", method="AUTH", status=401, start_time=start,
                     session_id=session_id, product_id=None, outcome="invalid_session",
                     request_id=request_id)
@@ -42,8 +54,8 @@ def handler(event: dict, context) -> dict:
     now = int(time.time())
 
     if session_id is not None:
-        existing = table.get_item(Key={"session_id": session_id}).get("Item")
-        if existing is not None:
+        existing = table.get_item(Key={"session_id": session_id}, ConsistentRead=True).get("Item")
+        if existing is not None and int(existing["ttl"]) > now:
             table.update_item(
                 Key={"session_id": session_id},
                 UpdateExpression="SET request_count = request_count + :one",
@@ -57,7 +69,7 @@ def handler(event: dict, context) -> dict:
                 "context": {"session_id": session_id, "is_new_session": "false"},
             }
 
-    session_id = session_id or str(uuid.uuid4())
+    session_id = str(uuid.uuid4())
     table.put_item(Item={
         "session_id": session_id,
         "created_at": now,

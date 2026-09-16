@@ -10,6 +10,8 @@
 # by necessity. Tighten per-service as phases stabilize (e.g. resource ARNs,
 # tag conditions). Documented as a known tradeoff in docs/phase-0-foundation.md.
 # trivy:ignore:aws-0345 Broad deploy role accepted during active development (see skips below).
+data "aws_caller_identity" "current" {}
+
 data "aws_iam_policy_document" "deploy" {
   # ACCEPTED RISK — broad CI deploy role. Mitigations: (1) the OIDC trust policy
   # restricts assumption to THIS repo + chosen branches only; (2) IAM actions are
@@ -52,9 +54,39 @@ data "aws_iam_policy_document" "deploy" {
       "iam:CreateRole", "iam:DeleteRole", "iam:GetRole", "iam:TagRole",
       "iam:AttachRolePolicy", "iam:DetachRolePolicy",
       "iam:PutRolePolicy", "iam:DeleteRolePolicy", "iam:GetRolePolicy",
-      "iam:PassRole",
+      "iam:PassRole", "iam:UpdateAssumeRolePolicy", "iam:UpdateRole",
+      "iam:ListRolePolicies", "iam:ListAttachedRolePolicies", "iam:ListInstanceProfilesForRole", "iam:UntagRole",
     ]
-    resources = ["arn:aws:iam::*:role/botdef-*"]
+    resources = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/botdef-*"]
+  }
+
+  statement {
+    sid       = "EncryptedStateAccess"
+    actions   = ["kms:Decrypt", "kms:Encrypt", "kms:GenerateDataKey", "kms:DescribeKey"]
+    resources = [var.state_kms_key_arn]
+  }
+
+  statement {
+    sid = "GithubOidcProviderManagement"
+    actions = [
+      "iam:GetOpenIDConnectProvider", "iam:CreateOpenIDConnectProvider",
+      "iam:DeleteOpenIDConnectProvider", "iam:UpdateOpenIDConnectProviderThumbprint",
+      "iam:AddClientIDToOpenIDConnectProvider", "iam:RemoveClientIDFromOpenIDConnectProvider",
+      "iam:TagOpenIDConnectProvider", "iam:UntagOpenIDConnectProvider", "iam:ListOpenIDConnectProviderTags",
+    ]
+    resources = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:oidc-provider/token.actions.githubusercontent.com"]
+  }
+
+  # WAF logging can create its delivery service-linked role on first deploy.
+  statement {
+    sid       = "WafLoggingServiceRole"
+    actions   = ["iam:CreateServiceLinkedRole"]
+    resources = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/aws-service-role/wafv2.amazonaws.com/AWSServiceRoleForWAFV2Logging"]
+    condition {
+      test     = "StringEquals"
+      variable = "iam:AWSServiceName"
+      values   = ["wafv2.amazonaws.com"]
+    }
   }
 }
 
@@ -88,9 +120,15 @@ resource "aws_budgets_budget" "zero_spend" {
 # ---------------------------------------------------------------------------
 # Phase 1: the "drop" target app that later phases attack, log, and defend.
 # ---------------------------------------------------------------------------
+resource "random_password" "origin" {
+  length  = 64
+  special = false
+}
+
 module "app" {
-  source      = "../../modules/app"
-  environment = "dev"
+  source        = "../../modules/app"
+  environment   = "dev"
+  origin_secret = random_password.origin.result
 }
 
 # ---------------------------------------------------------------------------
@@ -116,4 +154,5 @@ module "waf" {
   logs_bucket_name = module.logging.logs_bucket_name
   logs_bucket_arn  = module.logging.logs_bucket_arn
   glue_database    = module.logging.glue_database
+  origin_secret    = random_password.origin.result
 }

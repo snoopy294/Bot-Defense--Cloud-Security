@@ -8,6 +8,7 @@ from boto3.dynamodb.conditions import Key
 
 from common.logging import log_request
 from common.responses import json_response
+from common.validation import endpoint
 
 
 def _table():
@@ -29,6 +30,7 @@ def _serialize(item: dict, dropped: bool) -> dict:
     return out
 
 
+@endpoint
 def handler(event: dict, context) -> dict:
     start = time.time()
     session_id = event["requestContext"]["authorizer"]["lambda"]["session_id"]
@@ -53,6 +55,10 @@ def handler(event: dict, context) -> dict:
 
     resp = table.query(IndexName="catalog-index", KeyConditionExpression=Key("catalog_pk").eq("PRODUCT"))
     items = [_serialize(item, now >= int(item["drop_at"])) for item in resp.get("Items", [])]
+    while "LastEvaluatedKey" in resp:
+        resp = table.query(IndexName="catalog-index", KeyConditionExpression=Key("catalog_pk").eq("PRODUCT"),
+                           ExclusiveStartKey=resp["LastEvaluatedKey"])
+        items.extend(_serialize(item, now >= int(item["drop_at"])) for item in resp.get("Items", []))
     result = json_response(200, items)
     log_request(route=route, method="GET", status=200, start_time=start,
                 session_id=session_id, product_id=None, outcome="ok", request_id=request_id)
