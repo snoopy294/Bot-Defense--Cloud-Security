@@ -15,9 +15,6 @@ Synthetic inventory, orders, sessions, and cloud logs were deleted; local report
 and experiment data remain. This lab is reproducible using the
 [runbook](temporary-aws-lab.md).
 
-AWS reported an active FREE account plan with $100 credits before the experiment
-and $140 credits after teardown. These are reported balances, not a finalized
-usage invoice; billing can lag. No paid-plan upgrade was performed.
 
 ## Live verification
 
@@ -64,11 +61,3 @@ Trivy reported no HIGH/CRITICAL findings in the minimal lab configuration.
 Checkov was not installed locally and was not run during this session; its
 GitHub Actions check remains configured. Changes have not been pushed to GitHub.
 
-## Resume bullets supported by this experiment
-
-- Deployed and tore down a Terraform-managed AWS security lab using Lambda,
-  API Gateway, DynamoDB, IAM, and CloudWatch, with cost alerts and short log retention.
-- Built a bounded Python traffic generator and offline bot classifier; collected
-  122 live API requests across 16 scripted actors and evaluated on held-out runs.
-- Validated secure session handling, transactional checkout, retry idempotency,
-  and request-to-log correlation through automated tests and live AWS verification.
