@@ -19,3 +19,9 @@ variable "permissions_policy_json" {
   description = "JSON IAM policy granting the deploy role its permissions (scoped by the caller)."
   type        = string
 }
+
+variable "permissions_boundary_arn" {
+  description = "Optional IAM permissions boundary ARN applied to every role this module creates (required by the dev deploy role's iam:CreateRole condition)."
+  type        = string
+  default     = null
+}

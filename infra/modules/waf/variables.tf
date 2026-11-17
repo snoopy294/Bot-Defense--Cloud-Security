@@ -28,3 +28,9 @@ variable "glue_database" {
   description = "Name of the Phase 2 Glue Catalog database (module.logging.glue_database), used as the parent database for the new waf_logs table."
   type        = string
 }
+
+variable "permissions_boundary_arn" {
+  description = "Optional IAM permissions boundary ARN applied to every role this module creates (required by the dev deploy role's iam:CreateRole condition)."
+  type        = string
+  default     = null
+}

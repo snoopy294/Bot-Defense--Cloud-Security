@@ -69,9 +69,15 @@ a tiny encrypted bucket) and is needed to track state.
 
 ## Known tradeoffs (be ready to explain these in an interview)
 
-- **Deploy role breadth:** the CI role manages the whole dev stack, so it grants broad service
-  actions with narrow IAM (`botdef-*` roles only). The right next step is per-service ARN/tag
-  scoping; left wide on purpose early to avoid churn while the architecture moves.
+- **Deploy role breadth:** S3, DynamoDB, Lambda, Firehose, Budgets and Glue are scoped to
+  `botdef-*` ARNs (plus object-only access to the state bucket). API Gateway, CloudFront, WAF,
+  CloudWatch Logs and Athena are still service-wide on `*`, because their Terraform calls need
+  account-level actions. The next step is to scope those per phase.
+- **Permissions boundary (`botdef-permissions-boundary`):** this caps the deploy role and every
+  `botdef-*` role it creates. `iam:CreateRole` is allowed only with this boundary attached. The
+  boundary explicitly denies editing itself, editing the deploy role's policies, boundary or trust,
+  and removing the boundary from any project role. As a result, CI can no longer change the deploy
+  role or the boundary. Those changes must be applied locally with admin credentials.
 - **State bucket = crown jewels:** it is KMS-encrypted, versioned, TLS-only, and fully
   public-access-blocked. Anyone with read on it can read secrets in state — treat accordingly.
 - **`.terraform.lock.hcl` is gitignored for now;** commit it (remove the ignore line) once provider

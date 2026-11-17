@@ -41,9 +41,10 @@ data "aws_iam_policy_document" "trust" {
 }
 
 resource "aws_iam_role" "github_deploy" {
-  name               = var.role_name
-  assume_role_policy = data.aws_iam_policy_document.trust.json
-  description        = "Assumed by GitHub Actions via OIDC to deploy the bot-defense lab."
+  name                 = var.role_name
+  assume_role_policy   = data.aws_iam_policy_document.trust.json
+  permissions_boundary = var.permissions_boundary_arn
+  description          = "Assumed by GitHub Actions via OIDC to deploy the bot-defense lab."
 }
 
 # Permissions are intentionally passed in so the caller can scope them per use.

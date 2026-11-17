@@ -24,8 +24,9 @@ locals {
 
 # --- authorizer: PutItem/UpdateItem/GetItem on Sessions only ---
 resource "aws_iam_role" "authorizer" {
-  name               = "botdef-fn-authorizer"
-  assume_role_policy = data.aws_iam_policy_document.lambda_trust.json
+  name                 = "botdef-fn-authorizer"
+  assume_role_policy   = data.aws_iam_policy_document.lambda_trust.json
+  permissions_boundary = var.permissions_boundary_arn
 }
 
 resource "aws_iam_role_policy" "authorizer" {
@@ -48,8 +49,9 @@ resource "aws_iam_role_policy" "authorizer" {
 
 # --- catalog: GetItem/Query on Products (+ its GSI) only ---
 resource "aws_iam_role" "catalog" {
-  name               = "botdef-fn-catalog"
-  assume_role_policy = data.aws_iam_policy_document.lambda_trust.json
+  name                 = "botdef-fn-catalog"
+  assume_role_policy   = data.aws_iam_policy_document.lambda_trust.json
+  permissions_boundary = var.permissions_boundary_arn
 }
 
 resource "aws_iam_role_policy" "catalog" {
@@ -73,8 +75,9 @@ resource "aws_iam_role_policy" "catalog" {
 
 # --- cart: GetItem/UpdateItem on Products + PutItem on Reservations ---
 resource "aws_iam_role" "cart" {
-  name               = "botdef-fn-cart"
-  assume_role_policy = data.aws_iam_policy_document.lambda_trust.json
+  name                 = "botdef-fn-cart"
+  assume_role_policy   = data.aws_iam_policy_document.lambda_trust.json
+  permissions_boundary = var.permissions_boundary_arn
 }
 
 resource "aws_iam_role_policy" "cart" {
@@ -102,8 +105,9 @@ resource "aws_iam_role_policy" "cart" {
 
 # --- checkout: GetItem/UpdateItem on Reservations + PutItem on Orders ---
 resource "aws_iam_role" "checkout" {
-  name               = "botdef-fn-checkout"
-  assume_role_policy = data.aws_iam_policy_document.lambda_trust.json
+  name                 = "botdef-fn-checkout"
+  assume_role_policy   = data.aws_iam_policy_document.lambda_trust.json
+  permissions_boundary = var.permissions_boundary_arn
 }
 
 resource "aws_iam_role_policy" "checkout" {
@@ -131,8 +135,9 @@ resource "aws_iam_role_policy" "checkout" {
 
 # --- admin: write Products, delete/scan Reservations+Orders, read the admin secret ---
 resource "aws_iam_role" "admin" {
-  name               = "botdef-fn-admin"
-  assume_role_policy = data.aws_iam_policy_document.lambda_trust.json
+  name                 = "botdef-fn-admin"
+  assume_role_policy   = data.aws_iam_policy_document.lambda_trust.json
+  permissions_boundary = var.permissions_boundary_arn
 }
 
 resource "aws_iam_role_policy" "admin" {

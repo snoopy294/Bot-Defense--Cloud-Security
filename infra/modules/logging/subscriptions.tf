@@ -10,8 +10,9 @@ data "aws_iam_policy_document" "cwl_to_firehose_trust" {
 }
 
 resource "aws_iam_role" "cwl_to_firehose" {
-  name               = "botdef-cwl-to-firehose-${var.environment}"
-  assume_role_policy = data.aws_iam_policy_document.cwl_to_firehose_trust.json
+  name                 = "botdef-cwl-to-firehose-${var.environment}"
+  assume_role_policy   = data.aws_iam_policy_document.cwl_to_firehose_trust.json
+  permissions_boundary = var.permissions_boundary_arn
 }
 
 resource "aws_iam_role_policy" "cwl_to_firehose" {

@@ -46,3 +46,9 @@ variable "admin_secret_param_name" {
   type        = string
   default     = "/botdef/admin-secret"
 }
+
+variable "permissions_boundary_arn" {
+  description = "Optional IAM permissions boundary ARN applied to every role this module creates (required by the dev deploy role's iam:CreateRole condition)."
+  type        = string
+  default     = null
+}

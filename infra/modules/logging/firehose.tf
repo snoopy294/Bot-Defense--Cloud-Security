@@ -11,8 +11,9 @@ data "aws_iam_policy_document" "firehose_trust" {
 
 # One delivery role for both streams, scoped to only this bucket.
 resource "aws_iam_role" "firehose" {
-  name               = "botdef-firehose-delivery-${var.environment}"
-  assume_role_policy = data.aws_iam_policy_document.firehose_trust.json
+  name                 = "botdef-firehose-delivery-${var.environment}"
+  assume_role_policy   = data.aws_iam_policy_document.firehose_trust.json
+  permissions_boundary = var.permissions_boundary_arn
 }
 
 resource "aws_iam_role_policy" "firehose" {

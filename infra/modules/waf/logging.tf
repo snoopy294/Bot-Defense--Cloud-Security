@@ -10,8 +10,9 @@ data "aws_iam_policy_document" "waf_firehose_trust" {
 }
 
 resource "aws_iam_role" "waf_firehose" {
-  name               = "botdef-waf-firehose-delivery-${var.environment}"
-  assume_role_policy = data.aws_iam_policy_document.waf_firehose_trust.json
+  name                 = "botdef-waf-firehose-delivery-${var.environment}"
+  assume_role_policy   = data.aws_iam_policy_document.waf_firehose_trust.json
+  permissions_boundary = var.permissions_boundary_arn
 }
 
 resource "aws_iam_role_policy" "waf_firehose" {
